@@ -151,8 +151,8 @@ UpdatedModels ModelUpdaterBasicFuse::fuseData(FusionResults * f, Model * model1,
 	std::vector<int> partition = getPartition(scores,2,5,2);
 
 //	printf("model1\n");
-	unsigned int frames1 = model1->scores.size();
-	unsigned int frames2 = model2->scores.size();
+	unsigned int frames1 = model1->frames.size();
+	unsigned int frames2 = model2->frames.size();
 	double sumscore1 = 0;
 	for(unsigned int i = 0; i < frames1; i++){
 		for(unsigned int j = 0; j < frames1; j++){

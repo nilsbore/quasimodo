@@ -23,6 +23,7 @@ namespace reglib
 {
 	class RGBDFrame{
 		public:
+		std::string keyval;
 		Camera * camera;
 		unsigned long id;
 		double capturetime;

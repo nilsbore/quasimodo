@@ -37,14 +37,14 @@ RGBDFrame::RGBDFrame(){
 	id = RGBDFrame_id_counter++;
 	capturetime = 0;
 	pose = Eigen::Matrix4d::Identity();
+	keyval = "";
 }
 
 bool updated = true;
 void on_trackbar( int, void* ){updated = true;}
 
 RGBDFrame::RGBDFrame(Camera * camera_, cv::Mat rgb_, cv::Mat depth_, double capturetime_, Eigen::Matrix4d pose_, bool compute_normals){
-
-	//printf("%s LINE:%i\n",__FILE__,__LINE__);
+	keyval = "";
 
     sweepid = -1;
 	id = RGBDFrame_id_counter++;

@@ -21,6 +21,23 @@ namespace reglib
 		double stopval;
 		unsigned steps;
 
+		double rematch_time;
+		double residuals_time;
+		double opt_time;
+		double computeModel_time;
+		double setup_matches_time;
+		double setup_equation_time;
+		double setup_equation_time2;
+		double solve_equation_time;
+		double total_time_start;
+
+		const unsigned int maxcount = 1000000;
+		double * Qp_arr;
+		double * Qn_arr;
+		double * Xp_arr;
+		double * Xn_arr;
+		double * rangeW_arr;
+
 		std::vector<int> nr_datas;
 
 		std::vector< bool > is_ok;
@@ -31,8 +48,13 @@ namespace reglib
 		std::vector< Eigen::Matrix<double, 3, Eigen::Dynamic> > transformed_normals;
 		std::vector< Eigen::VectorXd > informations;
 
-        std::vector< int > nr_arraypoints;
+		std::vector< int > nr_arraypoints;
 		std::vector< double * > arraypoints;
+		std::vector< double * > arraynormals;
+		std::vector< double * > arraycolors;
+		std::vector< double * > arrayinformations;
+
+
 		std::vector< Tree3d * > trees3d;
 		std::vector< ArrayData3D<double> * > a3dv;
 
@@ -65,6 +87,9 @@ namespace reglib
 		void setData(std::vector<RGBDFrame*> frames_, std::vector<ModelMask *> mmasks);
 		void setData(std::vector< pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr > all_clouds);
 
+		void rematch(std::vector<Eigen::Matrix4d> poses);
+		Eigen::MatrixXd getAllResiduals(std::vector<Eigen::Matrix4d> poses);
+		std::vector<Eigen::Matrix4d> optimize(std::vector<Eigen::Matrix4d> poses);
 	};
 
 }
