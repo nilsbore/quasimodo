@@ -18,7 +18,7 @@
     <include file="$(find quasimodo_retrieval)/launch/retrieval.launch">
         <arg name="vocabulary_path" value="$(arg vocabulary_path)"/>
     </include>
-<!--
+
     <include file="$(find quasimodo_brain)/launch/modelserver.launch">
         <arg name="occlusion_penalty" value="$(arg occlusion_penalty)"/>
         <arg name="massreg_timeout" value="$(arg massreg_timeout)"/>
@@ -29,6 +29,6 @@
     <include file="$(find quasimodo_brain)/launch/robot_listener.launch">
         <arg name="topicname" value="$(arg topicname)"/>
     </include>
--->
+
 
 </launch>
