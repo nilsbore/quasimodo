@@ -97,31 +97,6 @@ void keyboardEventOccurred (const pcl::visualization::KeyboardEvent &event,  voi
 void fillNormals(pcl::PointCloud<pcl::PointXYZRGBNormal> & cloud, int normaltype = 0){
 	viewer->registerKeyboardCallback (keyboardEventOccurred, (void*)&viewer);
 	int stepw = 2*16;
-	/*
-	unsigned int nrp = cloud.points.size();
-	//for(int i = 0; i < nrp; i++){
-	while(true){
-		int i = rand()%nrp;
-		viewer->removeAllShapes();
-		viewer->addSphere<pcl::PointXYZRGBNormal>(cloud.points[i],0.1, 0,0,255, "S1");
-		viewer->addSphere<pcl::PointXYZRGBNormal>(cloud.points[i+2],0.1, 255,0,255, "S2");
-		viewer->spin();
-
-//		int jstart = std::max(int(0),i-16);
-//		int jstop = std::min(int(nrp),i+16);
-//		printf("%i -> %i %i\n",i,jstart,jstop);
-//		for(int j = jstart; j < jstop; j++){
-//			printf("%i %i\n",i,j);
-//			viewer->removeAllShapes();
-//			viewer->addSphere<pcl::PointXYZRGBNormal>(cloud.points[i],0.1, 0,0,255, "S1");
-//			viewer->addSphere<pcl::PointXYZRGBNormal>(cloud.points[j],0.1, 255,0,255, "S2");
-//			viewer->spin();
-//			if(gonext){gonext = false;j = jstop;}
-//		}
-	}
-	//}
-	*/
-
 
 	unsigned int nrp = cloud.points.size();
 	for(int i = 0; i < cloud.points.size(); i++){
@@ -161,15 +136,6 @@ void fillNormals(pcl::PointCloud<pcl::PointXYZRGBNormal> & cloud, int normaltype
 		if(s2 > score){score = s2; n = n2;}
 		if(s3 > score){score = s3; n = n3;}
 		if(s4 > score){score = s4; n = n4;}
-		//		float nx1,ny1,nz1;
-		//		getNormal(nx1,ny1,nz1,np.x,np.y,np.z,right.x,right.y,right.z,up.x,up.y,up.z);
-		//		float nx2,ny2,nz2;
-		//		getNormal(nx2,ny2,nz2,np.x,np.y,np.z,right.x,right.y,right.z,down.x,down.y,down.z);
-		//		float nx3,ny3,nz3;
-		//		getNormal(nx3,ny3,nz3,np.x,np.y,np.z,left.x,left.y,left.z,up.x,up.y,up.z);
-		//		float nx4,ny4,nz4;
-		//		getNormal(nx4,ny4,nz4,np.x,np.y,np.z,left.x,left.y,left.z,down.x,down.y,down.z);
-
 
 		if((npv+n).norm() > npv.norm()){
 			n = -n;
@@ -178,47 +144,6 @@ void fillNormals(pcl::PointCloud<pcl::PointXYZRGBNormal> & cloud, int normaltype
 		np.normal_x = n(0);
 		np.normal_y = n(1);
 		np.normal_z = n(2);
-
-
-		//		if(normaltype == 0){
-		//			np.normal_x = n1(0);//nx1;
-		//			np.normal_y = n1(1);//ny1;
-		//			np.normal_z = n1(2);//nz1;
-		//		}
-		//		if(normaltype == 1){
-		//			np.normal_x = n2(0);//nx1;
-		//			np.normal_y = n2(1);//ny1;
-		//			np.normal_z = n2(2);//nz1;
-		//		}
-		//		if(normaltype == 2){
-		//			np.normal_x = n3(0);//nx1;
-		//			np.normal_y = n3(1);//ny1;
-		//			np.normal_z = n3(2);//nz1;
-		//		}
-		//		if(normaltype == 3){
-		//			np.normal_x = n4(0);//nx1;
-		//			np.normal_y = n4(1);//ny1;
-		//			np.normal_z = n4(2);//nz1;
-		//		}
-		//		if(i%17 == 0){
-		//			viewer->removeAllShapes();
-		//			viewer->addSphere<pcl::PointXYZRGBNormal>(np,0.1, 0,0,255, "S1");
-		//			viewer->addSphere<pcl::PointXYZRGBNormal>(right,0.1, 255,0,255, "S2");
-		//			viewer->addSphere<pcl::PointXYZRGBNormal>(left,0.1, 255,0,0, "S3");
-		//			viewer->addSphere<pcl::PointXYZRGBNormal>(up,0.1, 0,255,255, "S4");
-		//			viewer->addSphere<pcl::PointXYZRGBNormal>(down,0.1, 255,255,255, "S5");
-		//			pcl::PointXYZRGBNormal tmp;
-		//			tmp.x = np.x+np.normal_x;
-		//			tmp.y = np.y+np.normal_y;
-		//			tmp.z = np.z+np.normal_z;
-		//			viewer->addLine<pcl::PointXYZRGBNormal> (np,right,	255,255,0,"L1");
-		//			viewer->addLine<pcl::PointXYZRGBNormal> (np,left,	255,0,0,"L2");
-		//			viewer->addLine<pcl::PointXYZRGBNormal> (np,up,		0,255,255,"L3");
-		//			viewer->addLine<pcl::PointXYZRGBNormal> (np,down,	255,255,255,"L4");
-		//			viewer->addLine<pcl::PointXYZRGBNormal> (np,tmp,	255,0,255,"L5");
-		//			viewer->spin();
-		//		}
-
 	}
 
 }
@@ -253,7 +178,8 @@ void  cloud_cb_l(const sensor_msgs::PointCloud2ConstPtr& input){
 }
 
 pcl::PointCloud<pcl::PointXYZRGB> prevr;
-std::vector< pcl::PointCloud<pcl::PointXYZRGB> > all_clouds;
+std::vector< pcl::PointCloud<pcl::PointXYZRGBNormal> > all_clouds;
+std::vector< Eigen::Matrix4d > all_poses;
 void  cloud_cb_r(const sensor_msgs::PointCloud2ConstPtr& input){
 	ROS_INFO("r pointcloud in %i",counterr);
 
@@ -303,7 +229,34 @@ void  cloud_cb_r(const sensor_msgs::PointCloud2ConstPtr& input){
 
 		pcl::PointCloud<pcl::PointXYZRGBNormal> fullcloudnormals = getCloudWithNormals(fullcloud,0);
 
-		//all_clouds.push_back(fullcloudnormals);
+        Eigen::Matrix4d motion = Eigen::Matrix4d::Identity();
+        for(int i = 0; i < 3; i++){
+            Eigen::Matrix3d rot = motion.block(0,0,3,3);
+            Vector3d ea = rot.eulerAngles(0, 1, 2);
+            std::vector< pcl::PointCloud<pcl::PointXYZRGBNormal> > test_clouds;
+            std::vector< Eigen::Matrix4d > test_poses;
+        }
+
+
+        all_clouds.push_back(fullcloudnormals);
+        if(all_poses.size()==0){all_poses.push_back(Eigen::Matrix4d::Identity());
+        }else if(all_poses.size()==1){all_poses.push_back(all_poses.back());
+        }else{
+            all_poses.push_back(all_poses.back()*all_poses[all_poses.size()].inverse()*all_poses.back());
+        }
+
+        reglib::MassRegistrationPPR * massreg = new reglib::MassRegistrationPPR(0.1);
+        massreg->timeout = 60;
+        massreg->viewer = viewer;
+        massreg->visualizationLvl = 1;
+
+//        massreg->setData(clouds);
+
+        massreg->stopval = 0.001;
+        massreg->steps = 10;
+
+//      reglib::MassFusionResults mfr = massreg->getTransforms(relativeposes);
+        delete massreg;
 
 		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
 		*cloud_ptr = fullcloudnormals;
