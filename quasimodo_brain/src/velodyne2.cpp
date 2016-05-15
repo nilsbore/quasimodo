@@ -43,18 +43,18 @@ void getNormal(float & nx, float & ny, float & nz, float x1, float y1, float z1,
 	float u1 = x1-x2;
 	float u2 = y1-y2;
 	float u3 = z1-z2;
-//	float unorm = sqrt(u1*u1+u2*u2+u3*u3);
-//	u1 /= unorm;
-//	u2 /= unorm;
-//	u3 /= unorm;
+	//	float unorm = sqrt(u1*u1+u2*u2+u3*u3);
+	//	u1 /= unorm;
+	//	u2 /= unorm;
+	//	u3 /= unorm;
 
 	float v1 = x1-x3;
 	float v2 = y1-y3;
 	float v3 = z1-z3;
-//	float vnorm = sqrt(v1*v1+v2*v2+v3*v3);
-//	v1 /= vnorm;
-//	v2 /= vnorm;
-//	v3 /= vnorm;
+	//	float vnorm = sqrt(v1*v1+v2*v2+v3*v3);
+	//	v1 /= vnorm;
+	//	v2 /= vnorm;
+	//	v3 /= vnorm;
 
 
 	//Corssprod u x v
@@ -78,15 +78,51 @@ void getNormal(float & nx, float & ny, float & nz, float x1, float y1, float z1,
 
 }
 
-//double scoren (Eigen::Vector3d & a, Eigen::Vector3d & b){
-//	double v = a.dot(b);
-//	if(std::isnan(a)){return 2;}
-//	return v*v;
-//}
+double scoren (Eigen::Vector3d & a, Eigen::Vector3d & b){
+	double v = a.dot(b);
+	if(std::isnan(v)){return 0;}
+	return v*v;
+}
+
+unsigned int text_id = 0;
+bool gonext = false;
+void keyboardEventOccurred (const pcl::visualization::KeyboardEvent &event,  void* viewer_void) {
+	boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer = *static_cast<boost::shared_ptr<pcl::visualization::PCLVisualizer> *> (viewer_void);
+	if (event.getKeySym () == "n" && event.keyDown ()){
+		gonext = true;
+		std::cout << "n was pressed => removing all text" << std::endl;
+	}
+}
 
 void fillNormals(pcl::PointCloud<pcl::PointXYZRGBNormal> & cloud, int normaltype = 0){
+	viewer->registerKeyboardCallback (keyboardEventOccurred, (void*)&viewer);
+	int stepw = 2*16;
+	/*
+	unsigned int nrp = cloud.points.size();
+	//for(int i = 0; i < nrp; i++){
+	while(true){
+		int i = rand()%nrp;
+		viewer->removeAllShapes();
+		viewer->addSphere<pcl::PointXYZRGBNormal>(cloud.points[i],0.1, 0,0,255, "S1");
+		viewer->addSphere<pcl::PointXYZRGBNormal>(cloud.points[i+2],0.1, 255,0,255, "S2");
+		viewer->spin();
 
-	int stepw = 10*16;
+//		int jstart = std::max(int(0),i-16);
+//		int jstop = std::min(int(nrp),i+16);
+//		printf("%i -> %i %i\n",i,jstart,jstop);
+//		for(int j = jstart; j < jstop; j++){
+//			printf("%i %i\n",i,j);
+//			viewer->removeAllShapes();
+//			viewer->addSphere<pcl::PointXYZRGBNormal>(cloud.points[i],0.1, 0,0,255, "S1");
+//			viewer->addSphere<pcl::PointXYZRGBNormal>(cloud.points[j],0.1, 255,0,255, "S2");
+//			viewer->spin();
+//			if(gonext){gonext = false;j = jstop;}
+//		}
+	}
+	//}
+	*/
+
+
 	unsigned int nrp = cloud.points.size();
 	for(int i = 0; i < cloud.points.size(); i++){
 		pcl::PointXYZRGBNormal & np = cloud.points[i];
@@ -97,7 +133,7 @@ void fillNormals(pcl::PointCloud<pcl::PointXYZRGBNormal> & cloud, int normaltype
 		if(i%16 != 0){up = cloud.points[i-1];}
 
 		pcl::PointXYZRGBNormal down;
-		if(i%16 != 15){up = cloud.points[i+1];}
+		if(i%16 != 15){down = cloud.points[i+1];}
 
 		Eigen::Vector3d npv (np.x,np.y,np.z);
 		Eigen::Vector3d rv (right.x,right.y,right.z);
@@ -115,62 +151,76 @@ void fillNormals(pcl::PointCloud<pcl::PointXYZRGBNormal> & cloud, int normaltype
 		n3.normalize();
 		n4.normalize();
 
-//		double s1 = scoren(n1,n1)+scoren(n1,n2)+scoren(n1,n3)+scoren(n1,n4);
-//		double s2 = scoren(n2,n1)+scoren(n2,n2)+scoren(n2,n3)+scoren(n2,n4);
-//		double s3 = scoren(n3,n1)+scoren(n3,n2)+scoren(n3,n3)+scoren(n3,n4);
-//		double s4 = scoren(n4,n1)+scoren(n4,n2)+scoren(n4,n3)+scoren(n4,n4);
-//		float nx1,ny1,nz1;
-//		getNormal(nx1,ny1,nz1,np.x,np.y,np.z,right.x,right.y,right.z,up.x,up.y,up.z);
-//		float nx2,ny2,nz2;
-//		getNormal(nx2,ny2,nz2,np.x,np.y,np.z,right.x,right.y,right.z,down.x,down.y,down.z);
-//		float nx3,ny3,nz3;
-//		getNormal(nx3,ny3,nz3,np.x,np.y,np.z,left.x,left.y,left.z,up.x,up.y,up.z);
-//		float nx4,ny4,nz4;
-//		getNormal(nx4,ny4,nz4,np.x,np.y,np.z,left.x,left.y,left.z,down.x,down.y,down.z);
+		double s1 = scoren(n1,n1)+scoren(n1,n2)+scoren(n1,n3)+scoren(n1,n4);
+		double s2 = scoren(n2,n1)+scoren(n2,n2)+scoren(n2,n3)+scoren(n2,n4);
+		double s3 = scoren(n3,n1)+scoren(n3,n2)+scoren(n3,n3)+scoren(n3,n4);
+		double s4 = scoren(n4,n1)+scoren(n4,n2)+scoren(n4,n3)+scoren(n4,n4);
 
-		if(normaltype == 0){
-			np.normal_x = n1(0);//nx1;
-			np.normal_y = n1(1);//ny1;
-			np.normal_z = n1(2);//nz1;
-		}
-		if(normaltype == 1){
-			np.normal_x = n2(0);//nx1;
-			np.normal_y = n2(1);//ny1;
-			np.normal_z = n2(2);//nz1;
-		}
-		if(normaltype == 2){
-			np.normal_x = n3(0);//nx1;
-			np.normal_y = n3(1);//ny1;
-			np.normal_z = n3(2);//nz1;
-		}
-		if(normaltype == 3){
-			np.normal_x = n4(0);//nx1;
-			np.normal_y = n4(1);//ny1;
-			np.normal_z = n4(2);//nz1;
-		}
-		printf("%f %f %f\n",np.normal_x,np.normal_y,np.normal_z);
+		Eigen::Vector3d n = n1;
+		double score = s1;
+		if(s2 > score){score = s2; n = n2;}
+		if(s3 > score){score = s3; n = n3;}
+		if(s4 > score){score = s4; n = n4;}
+		//		float nx1,ny1,nz1;
+		//		getNormal(nx1,ny1,nz1,np.x,np.y,np.z,right.x,right.y,right.z,up.x,up.y,up.z);
+		//		float nx2,ny2,nz2;
+		//		getNormal(nx2,ny2,nz2,np.x,np.y,np.z,right.x,right.y,right.z,down.x,down.y,down.z);
+		//		float nx3,ny3,nz3;
+		//		getNormal(nx3,ny3,nz3,np.x,np.y,np.z,left.x,left.y,left.z,up.x,up.y,up.z);
+		//		float nx4,ny4,nz4;
+		//		getNormal(nx4,ny4,nz4,np.x,np.y,np.z,left.x,left.y,left.z,down.x,down.y,down.z);
 
-		viewer->removeAllShapes();
 
-		pcl::PointXYZRGBNormal tmp;
-		tmp.x = np.x+np.normal_x;
-		tmp.y = np.y+np.normal_y;
-		tmp.z = np.z+np.normal_z;
-if(i%17 == 0){
-		viewer->addSphere<pcl::PointXYZRGBNormal>(np,0.1, 0,0,255, "S1");
-		viewer->addSphere<pcl::PointXYZRGBNormal>(right,0.1, 255,0,255, "S2");
-//		viewer->addSphere<pcl::PointXYZRGBNormal>(left,0.1, 255,0,0, "S3");
-		viewer->addSphere<pcl::PointXYZRGBNormal>(up,0.1, 0,255,255, "S4");
-//		viewer->addSphere<pcl::PointXYZRGBNormal>(down,0.1, 255,255,255, "S5");
+		if((npv+n).norm() > npv.norm()){
+			n = -n;
+		}
 
-		viewer->addLine<pcl::PointXYZRGBNormal> (np,right,	255,255,0,"L1");
-//		viewer->addLine<pcl::PointXYZRGBNormal> (np,left,	255,0,0,"L2");
-		viewer->addLine<pcl::PointXYZRGBNormal> (np,up,		0,255,255,"L3");
-//		viewer->addLine<pcl::PointXYZRGBNormal> (np,down,	255,255,255,"L4");
-		viewer->addLine<pcl::PointXYZRGBNormal> (np,tmp,	255,0,255,"L5");
-		viewer->spin();
-}
+		np.normal_x = n(0);
+		np.normal_y = n(1);
+		np.normal_z = n(2);
+
+
+		//		if(normaltype == 0){
+		//			np.normal_x = n1(0);//nx1;
+		//			np.normal_y = n1(1);//ny1;
+		//			np.normal_z = n1(2);//nz1;
+		//		}
+		//		if(normaltype == 1){
+		//			np.normal_x = n2(0);//nx1;
+		//			np.normal_y = n2(1);//ny1;
+		//			np.normal_z = n2(2);//nz1;
+		//		}
+		//		if(normaltype == 2){
+		//			np.normal_x = n3(0);//nx1;
+		//			np.normal_y = n3(1);//ny1;
+		//			np.normal_z = n3(2);//nz1;
+		//		}
+		//		if(normaltype == 3){
+		//			np.normal_x = n4(0);//nx1;
+		//			np.normal_y = n4(1);//ny1;
+		//			np.normal_z = n4(2);//nz1;
+		//		}
+		//		if(i%17 == 0){
+		//			viewer->removeAllShapes();
+		//			viewer->addSphere<pcl::PointXYZRGBNormal>(np,0.1, 0,0,255, "S1");
+		//			viewer->addSphere<pcl::PointXYZRGBNormal>(right,0.1, 255,0,255, "S2");
+		//			viewer->addSphere<pcl::PointXYZRGBNormal>(left,0.1, 255,0,0, "S3");
+		//			viewer->addSphere<pcl::PointXYZRGBNormal>(up,0.1, 0,255,255, "S4");
+		//			viewer->addSphere<pcl::PointXYZRGBNormal>(down,0.1, 255,255,255, "S5");
+		//			pcl::PointXYZRGBNormal tmp;
+		//			tmp.x = np.x+np.normal_x;
+		//			tmp.y = np.y+np.normal_y;
+		//			tmp.z = np.z+np.normal_z;
+		//			viewer->addLine<pcl::PointXYZRGBNormal> (np,right,	255,255,0,"L1");
+		//			viewer->addLine<pcl::PointXYZRGBNormal> (np,left,	255,0,0,"L2");
+		//			viewer->addLine<pcl::PointXYZRGBNormal> (np,up,		0,255,255,"L3");
+		//			viewer->addLine<pcl::PointXYZRGBNormal> (np,down,	255,255,255,"L4");
+		//			viewer->addLine<pcl::PointXYZRGBNormal> (np,tmp,	255,0,255,"L5");
+		//			viewer->spin();
+		//		}
+
 	}
+
 }
 
 pcl::PointCloud<pcl::PointXYZRGBNormal> getCloudWithNormals(pcl::PointCloud<pcl::PointXYZRGB> & cloud, int normaltype = 0){
@@ -187,13 +237,13 @@ pcl::PointCloud<pcl::PointXYZRGBNormal> getCloudWithNormals(pcl::PointCloud<pcl:
 		np.z = op.z;
 	}
 
-	pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
-	*cloud_ptr = normalcloud;
-	viewer->removeAllPointClouds();
-	viewer->addPointCloud<pcl::PointXYZRGBNormal> (cloud_ptr, pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGBNormal>(cloud_ptr), "cloud");
-	viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "cloud");
-	//viewer->addPointCloudNormals<pcl::PointXYZRGBNormal> (cloud_ptr, 17, 1.5, "normals");
-	viewer->spin();
+	//	pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
+	//	*cloud_ptr = normalcloud;
+	//	viewer->removeAllPointClouds();
+	//	viewer->addPointCloud<pcl::PointXYZRGBNormal> (cloud_ptr, pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGBNormal>(cloud_ptr), "cloud");
+	//	viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "cloud");
+	//	//viewer->addPointCloudNormals<pcl::PointXYZRGBNormal> (cloud_ptr, 17, 1.5, "normals");
+	//	viewer->spin();
 	fillNormals(normalcloud,normaltype);
 	return normalcloud;
 }
@@ -203,11 +253,19 @@ void  cloud_cb_l(const sensor_msgs::PointCloud2ConstPtr& input){
 }
 
 pcl::PointCloud<pcl::PointXYZRGB> prevr;
+std::vector< pcl::PointCloud<pcl::PointXYZRGB> > all_clouds;
 void  cloud_cb_r(const sensor_msgs::PointCloud2ConstPtr& input){
 	ROS_INFO("r pointcloud in %i",counterr);
 
+	pcl::PointCloud<pcl::PointXYZRGB> tmpcloud;
+	pcl::fromROSMsg (*input, tmpcloud);
+
 	pcl::PointCloud<pcl::PointXYZRGB> cloud;
-	pcl::fromROSMsg (*input, cloud);
+	cloud.resize(tmpcloud.points.size()/2);
+	for(int i = 0; i < tmpcloud.points.size(); i+=2){
+		cloud.points[i/2] = tmpcloud.points[i];
+	}
+
 
 	int r [16];
 	int g [16];
@@ -229,7 +287,7 @@ void  cloud_cb_r(const sensor_msgs::PointCloud2ConstPtr& input){
 
 	char buf[1024];
 	sprintf(buf,"%s/right_%.10i.pcd",path.c_str(),counterr);
-	pcl::io::savePCDFileBinary (string(buf), cloud);
+	//pcl::io::savePCDFileBinary (string(buf), cloud);
 	printf("nr points : %i resolution %i %i\n",cloud.points.size(),cloud.width,cloud.height);
 
 	if(counterr % 2 == 1){
@@ -240,25 +298,28 @@ void  cloud_cb_r(const sensor_msgs::PointCloud2ConstPtr& input){
 			fullcloud.points[i].b = b[i%16];
 		}
 		sprintf(buf,"%s/fullright_%.10i.pcd",path.c_str(),counterr);
-		pcl::io::savePCDFileBinary (string(buf), fullcloud);
+		//pcl::io::savePCDFileBinary (string(buf), fullcloud);
 
-		for(int i = 0; i < 5; i++){
-			pcl::PointCloud<pcl::PointXYZRGBNormal> fullcloudnormals = getCloudWithNormals(fullcloud,i);
-//			pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
-//			*cloud_ptr = fullcloudnormals;
-//			viewer->removeAllPointClouds();
-//			viewer->addPointCloud<pcl::PointXYZRGBNormal> (cloud_ptr, pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGBNormal>(cloud_ptr), "cloud");
-//			viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "cloud");
-//			//viewer->addPointCloudNormals<pcl::PointXYZRGBNormal> (cloud_ptr, 17, 1.5, "normals");
-//			viewer->spin();
-		}
-		//sprintf(buf,"%s/normalsfullright_%.10i.pcd",path.c_str(),counterr);
-		//pcl::io::savePCDFileBinary (string(buf), fullcloudnormals);
 
+		pcl::PointCloud<pcl::PointXYZRGBNormal> fullcloudnormals = getCloudWithNormals(fullcloud,0);
+
+		//all_clouds.push_back(fullcloudnormals);
+
+		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
+		*cloud_ptr = fullcloudnormals;
+		viewer->removeAllPointClouds();
+		viewer->addPointCloud<pcl::PointXYZRGBNormal> (cloud_ptr, pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGBNormal>(cloud_ptr), "cloud");
+		viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "cloud");
+		viewer->addPointCloudNormals<pcl::PointXYZRGBNormal> (cloud_ptr, 17, 0.5, "normals");
+		viewer->spinOnce();
+
+		sprintf(buf,"%s/normalsfullright_%.10i.pcd",path.c_str(),counterr);
+		pcl::io::savePCDFileBinary (string(buf), fullcloudnormals);
 	}
+	//
 
 	prevr = cloud;
-	if(counterr > 10){exit(0);}
+	//if(counterr > 10){exit(0);}
 	counterr++;
 }
 
