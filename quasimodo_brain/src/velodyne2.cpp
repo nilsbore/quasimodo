@@ -145,7 +145,6 @@ void fillNormals(pcl::PointCloud<pcl::PointXYZRGBNormal> & cloud, int normaltype
 		np.normal_y = n(1);
 		np.normal_z = n(2);
 	}
-
 }
 
 pcl::PointCloud<pcl::PointXYZRGBNormal> getCloudWithNormals(pcl::PointCloud<pcl::PointXYZRGB> & cloud, int normaltype = 0){
@@ -173,107 +172,193 @@ pcl::PointCloud<pcl::PointXYZRGBNormal> getCloudWithNormals(pcl::PointCloud<pcl:
 	return normalcloud;
 }
 
+
+pcl::PointCloud<pcl::PointXYZRGBNormal> getSparsifyCloud(pcl::PointCloud<pcl::PointXYZRGBNormal> & cloud, int stepw){
+    pcl::PointCloud<pcl::PointXYZRGBNormal> sparsecloud;
+    sparsecloud.reserve(cloud.points.size()/stepw);
+    for(int i = 0; i < cloud.points.size(); i+= 16*5){//16*(stepw-1)){
+        int starti = i;
+        for(;i < starti+16; i++){
+            sparsecloud.push_back(cloud.points[i]);
+        }
+    }
+    return sparsecloud;
+}
+
+pcl::PointCloud<pcl::PointXYZRGBNormal> getCloudFromParts(pcl::PointCloud<pcl::PointXYZRGB> prev, pcl::PointCloud<pcl::PointXYZRGB> curr, Eigen::Matrix4d motion = Eigen::Matrix4d::Identity()){
+    pcl::PointCloud<pcl::PointXYZRGB> prev_cloud;
+    prev_cloud.resize(prev.points.size()/2);
+    for(int i = 0; i < prev.points.size(); i+=2){
+        prev_cloud.points[i/2] = prev.points[i];
+    }
+
+    pcl::PointCloud<pcl::PointXYZRGB> curr_cloud;
+    curr_cloud.resize(curr.points.size()/2);
+    for(int i = 0; i < prev.points.size(); i+=2){
+        curr_cloud.points[i/2] = curr.points[i];
+    }
+
+
+    pcl::PointCloud<pcl::PointXYZRGB> fullcloud = prev_cloud+curr_cloud;
+
+    Eigen::Matrix4d invmotion = motion.inverse();
+    Eigen::Matrix3d rot = invmotion.block(0,0,3,3);
+    Vector3d ea = rot.eulerAngles(2, 0, 2);
+
+    for(int i = 0; i < fullcloud.points.size(); i+=16){
+        double part = double(i)/double(fullcloud.points.size());
+
+
+        Eigen::Affine3d mat;
+        mat = Eigen::AngleAxisd(part*ea(0), Eigen::Vector3d::UnitZ())*Eigen::AngleAxisd(part*ea(1), Eigen::Vector3d::UnitX())*Eigen::AngleAxisd(part*ea(2), Eigen::Vector3d::UnitZ());
+
+        const double & m00 = mat(0,0); const double & m01 = mat(0,1); const double & m02 = mat(0,2); const double & m03 = part*invmotion(0,3);
+        const double & m10 = mat(1,0); const double & m11 = mat(1,1); const double & m12 = mat(1,2); const double & m13 = part*invmotion(1,3);
+        const double & m20 = mat(2,0); const double & m21 = mat(2,1); const double & m22 = mat(2,2); const double & m23 = part*invmotion(2,3);
+
+        for(int j = i; j < i+16; j++){//TODO set zeros to zero still
+            pcl::PointXYZRGB & p = fullcloud.points[j];
+            const double & src_x = p.x;
+            const double & src_y = p.y;
+            const double & src_z = p.z;
+            p.x = m00*src_x + m01*src_y + m02*src_z + m03;
+            p.y = m10*src_x + m11*src_y + m12*src_z + m13;
+            p.z = m20*src_x + m21*src_y + m22*src_z + m23;
+        }
+    }
+
+    pcl::PointCloud<pcl::PointXYZRGBNormal> fullcloudnormals = getCloudWithNormals(fullcloud,0);
+    return fullcloudnormals;
+}
+
+pcl::PointCloud<pcl::PointXYZRGB> prevl;
+std::vector< pcl::PointCloud<pcl::PointXYZRGBNormal> > all_cloudsl;
+std::vector< Eigen::Matrix4d > all_posesl;
 void  cloud_cb_l(const sensor_msgs::PointCloud2ConstPtr& input){
-	ROS_INFO("l pointcloud in %i",counterl);
+    ROS_INFO("l pointcloud in %i",counterl);
+
+    pcl::PointCloud<pcl::PointXYZRGB> tmpcloud;
+    pcl::fromROSMsg (*input, tmpcloud);
+
+    pcl::PointCloud<pcl::PointXYZRGB> cloud;
+    cloud.resize(tmpcloud.points.size()/2);
+    for(int i = 0; i < tmpcloud.points.size(); i+=2){cloud.points[i/2] = tmpcloud.points[i];}
+
+
+    char buf[1024];
+    if(counterl % 2 == 1){
+        pcl::PointCloud<pcl::PointXYZRGBNormal> fullcloudnormals = getCloudFromParts(prevl,cloud, Eigen::Matrix4d::Identity());
+        pcl::PointCloud<pcl::PointXYZRGBNormal> sparsecloudnormals = getSparsifyCloud(fullcloudnormals,6);
+//        all_clouds.push_back(fullcloudnormals);
+//        if(all_poses.size()==0){all_poses.push_back(Eigen::Matrix4d::Identity());
+//        }else if(all_poses.size()==1){all_poses.push_back(all_poses.back());
+//        }else{
+//            all_poses.push_back(all_poses.back()*all_poses[all_poses.size()].inverse()*all_poses.back());
+//        }
+
+//        reglib::MassRegistrationPPR * massreg = new reglib::MassRegistrationPPR(0.1);
+//        massreg->timeout = 60;
+//        massreg->viewer = viewer;
+//        massreg->visualizationLvl = 1;
+
+////        massreg->setData(clouds);
+
+//        massreg->stopval = 0.001;
+//        massreg->steps = 10;
+
+////      reglib::MassFusionResults mfr = massreg->getTransforms(relativeposes);
+//        delete massreg;
+
+//		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
+//		*cloud_ptr = fullcloudnormals;
+//		viewer->removeAllPointClouds();
+//		viewer->addPointCloud<pcl::PointXYZRGBNormal> (cloud_ptr, pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGBNormal>(cloud_ptr), "cloud");
+//		viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "cloud");
+//		viewer->addPointCloudNormals<pcl::PointXYZRGBNormal> (cloud_ptr, 17, 0.5, "normals");
+//		viewer->spinOnce();
+
+        sprintf(buf,"%s/normalsfullleft_%.10i.pcd",path.c_str(),counterl/2);
+        pcl::io::savePCDFileBinary (string(buf), fullcloudnormals);
+        sprintf(buf,"%s/normalssparseleft_%.10i.pcd",path.c_str(),counterl/2);
+        pcl::io::savePCDFileBinary (string(buf), sparsecloudnormals);
+    }
+
+    prevl = cloud;
+    counterl++;
 }
 
 pcl::PointCloud<pcl::PointXYZRGB> prevr;
-std::vector< pcl::PointCloud<pcl::PointXYZRGBNormal> > all_clouds;
+std::vector< pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr > all_clouds;
 std::vector< Eigen::Matrix4d > all_poses;
+
 void  cloud_cb_r(const sensor_msgs::PointCloud2ConstPtr& input){
-	ROS_INFO("r pointcloud in %i",counterr);
+    ROS_INFO("r pointcloud in %i",counterr);
 
-	pcl::PointCloud<pcl::PointXYZRGB> tmpcloud;
-	pcl::fromROSMsg (*input, tmpcloud);
+    pcl::PointCloud<pcl::PointXYZRGB> tmpcloud;
+    pcl::fromROSMsg (*input, tmpcloud);
 
-	pcl::PointCloud<pcl::PointXYZRGB> cloud;
-	cloud.resize(tmpcloud.points.size()/2);
-	for(int i = 0; i < tmpcloud.points.size(); i+=2){
-		cloud.points[i/2] = tmpcloud.points[i];
-	}
+    pcl::PointCloud<pcl::PointXYZRGB> cloud;
+    cloud.resize(tmpcloud.points.size()/2);
+    for(int i = 0; i < tmpcloud.points.size(); i+=2){cloud.points[i/2] = tmpcloud.points[i];}
 
 
-	int r [16];
-	int g [16];
-	int b [16];
-	for(int h = 0; h < 16; h++){
-		r[h] = rand() % 256;
-		g[h] = rand() % 256;
-		b[h] = rand() % 256;
-	}
+    char buf[1024];
+    if(counterr % 2 == 1){
+        pcl::PointCloud<pcl::PointXYZRGBNormal> fullcloudnormals = getCloudFromParts(prevr,cloud, Eigen::Matrix4d::Identity());
+        pcl::PointCloud<pcl::PointXYZRGBNormal> sparsecloudnormals = getSparsifyCloud(fullcloudnormals,6);
 
-	cloud.height = 16;
-	cloud.width = cloud.points.size()/cloud.height;
-
-	for(int i = 0; i < cloud.points.size(); i++){
-		cloud.points[i].r = r[i%16];
-		cloud.points[i].g = g[i%16];
-		cloud.points[i].b = b[i%16];
-	}
-
-	char buf[1024];
-	sprintf(buf,"%s/right_%.10i.pcd",path.c_str(),counterr);
-	//pcl::io::savePCDFileBinary (string(buf), cloud);
-	printf("nr points : %i resolution %i %i\n",cloud.points.size(),cloud.width,cloud.height);
-
-	if(counterr % 2 == 1){
-		pcl::PointCloud<pcl::PointXYZRGB> fullcloud = prevr+cloud;
-		for(int i = 0; i < fullcloud.points.size(); i++){
-			fullcloud.points[i].r = r[i%16];
-			fullcloud.points[i].g = g[i%16];
-			fullcloud.points[i].b = b[i%16];
-		}
-		sprintf(buf,"%s/fullright_%.10i.pcd",path.c_str(),counterr);
-		//pcl::io::savePCDFileBinary (string(buf), fullcloud);
-
-
-		pcl::PointCloud<pcl::PointXYZRGBNormal> fullcloudnormals = getCloudWithNormals(fullcloud,0);
-
-        Eigen::Matrix4d motion = Eigen::Matrix4d::Identity();
-        for(int i = 0; i < 3; i++){
-            Eigen::Matrix3d rot = motion.block(0,0,3,3);
-            Vector3d ea = rot.eulerAngles(0, 1, 2);
-            std::vector< pcl::PointCloud<pcl::PointXYZRGBNormal> > test_clouds;
-            std::vector< Eigen::Matrix4d > test_poses;
-        }
-
-
-        all_clouds.push_back(fullcloudnormals);
-        if(all_poses.size()==0){all_poses.push_back(Eigen::Matrix4d::Identity());
-        }else if(all_poses.size()==1){all_poses.push_back(all_poses.back());
+        pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
+        *cloud_ptr = fullcloudnormals;
+        all_clouds.push_back(cloud_ptr);
+        if(all_poses.size()<=1){all_poses.push_back(Eigen::Matrix4d::Identity());
         }else{
-            all_poses.push_back(all_poses.back()*all_poses[all_poses.size()].inverse()*all_poses.back());
+            Eigen::Matrix4d v = all_poses[all_poses.size()-2].inverse()*all_poses.back();
+            all_poses.push_back(v*all_poses.back());
+        }
+        if(all_poses.size()>2){
+
+            std::vector< pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr > ac;
+            ac.push_back(all_clouds.front());
+            ac.push_back(all_clouds.back());
+
+            std::vector< Eigen::Matrix4d > ap;
+            ap.push_back(all_poses.front());
+            ap.push_back(all_poses.back());
+            reglib::MassRegistrationPPR * massreg = new reglib::MassRegistrationPPR(0.1);
+            massreg->timeout = 60;
+            massreg->viewer = viewer;
+            massreg->visualizationLvl = 0;
+            if(all_poses.size()%10 == 0){massreg->visualizationLvl = 1;}
+
+
+            massreg->setData(ac);
+
+            massreg->stopval = 0.001;
+            massreg->steps = 10;
+
+            reglib::MassFusionResults mfr = massreg->getTransforms(ap);
+            all_poses.back() = mfr.poses.back();
+            delete massreg;
         }
 
-        reglib::MassRegistrationPPR * massreg = new reglib::MassRegistrationPPR(0.1);
-        massreg->timeout = 60;
-        massreg->viewer = viewer;
-        massreg->visualizationLvl = 1;
 
-//        massreg->setData(clouds);
 
-        massreg->stopval = 0.001;
-        massreg->steps = 10;
+//		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
+//		*cloud_ptr = fullcloudnormals;
+//		viewer->removeAllPointClouds();
+//		viewer->addPointCloud<pcl::PointXYZRGBNormal> (cloud_ptr, pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGBNormal>(cloud_ptr), "cloud");
+//		viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "cloud");
+//		viewer->addPointCloudNormals<pcl::PointXYZRGBNormal> (cloud_ptr, 17, 0.5, "normals");
+//		viewer->spinOnce();
 
-//      reglib::MassFusionResults mfr = massreg->getTransforms(relativeposes);
-        delete massreg;
+        sprintf(buf,"%s/normalssparseright_%.10i.pcd",path.c_str(),counterr/2);
+        pcl::io::savePCDFileBinary (string(buf), sparsecloudnormals);
+        sprintf(buf,"%s/normalsfullright_%.10i.pcd",path.c_str(),counterr/2);
+        pcl::io::savePCDFileBinary (string(buf), fullcloudnormals);
+    }
 
-		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
-		*cloud_ptr = fullcloudnormals;
-		viewer->removeAllPointClouds();
-		viewer->addPointCloud<pcl::PointXYZRGBNormal> (cloud_ptr, pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGBNormal>(cloud_ptr), "cloud");
-		viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "cloud");
-		viewer->addPointCloudNormals<pcl::PointXYZRGBNormal> (cloud_ptr, 17, 0.5, "normals");
-		viewer->spinOnce();
-
-		sprintf(buf,"%s/normalsfullright_%.10i.pcd",path.c_str(),counterr);
-		pcl::io::savePCDFileBinary (string(buf), fullcloudnormals);
-	}
-	//
-
-	prevr = cloud;
-	//if(counterr > 10){exit(0);}
-	counterr++;
+    prevr = cloud;
+    counterr++;
 }
 
 int main(int argc, char **argv){
