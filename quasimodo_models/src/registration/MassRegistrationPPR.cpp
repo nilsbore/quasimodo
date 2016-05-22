@@ -71,8 +71,8 @@ MassRegistrationPPR::~MassRegistrationPPR(){
 bool okVal(double v){return !std::isnan(v) && !(v == std::numeric_limits<double>::infinity());}
 
 bool isValidPoint(pcl::PointXYZRGBNormal p){
-	return	!okVal (p.x)		&& !okVal (p.y)			&& !okVal (p.z) &&			//No nans or inf in position
-			!okVal (p.normal_x) && !okVal (p.normal_y)	&& !okVal (p.normal_z) &&	//No nans or inf in normal
+    return	okVal (p.x)         && okVal (p.y)			&& okVal (p.z) &&			//No nans or inf in position
+            okVal (p.normal_x)  && okVal (p.normal_y)	&& okVal (p.normal_z) &&	//No nans or inf in normal
 			!(p.x == 0			&& p.y == 0				&& p.z == 0 ) &&						//not a zero point
 			!(p.normal_x == 0	&& p.normal_y == 0		&& p.normal_z == 0);					//not a zero normal
 }
@@ -198,7 +198,7 @@ void MassRegistrationPPR::setData(std::vector< pcl::PointCloud<pcl::PointXYZRGBN
 				Xn(1,c)	= yn;
 				Xn(2,c)	= zn;
 
-				information(c) = 1.0/(z*z);
+                information(c) = 1/sqrt(2+x*x+y*y+z*z);//1.0/(z*z);
 				C(0,c) = p.r;
 				C(1,c) = p.g;
 				C(2,c) = p.b;
